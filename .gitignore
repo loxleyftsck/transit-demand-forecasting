@@ -1,0 +1,20 @@
+# Raw & processed data (besar, bisa diregenerasi lewat pipeline src/)
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# MLflow local tracking (besar, regeneratable lewat src/train.py & src/predict.py)
+mlruns/
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Claude Code local tooling config
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

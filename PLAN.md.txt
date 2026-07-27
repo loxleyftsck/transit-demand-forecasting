@@ -1,0 +1,173 @@
+# PLAN.md — Arsitektur & Alur Pengerjaan
+## Hourly Passenger Demand Forecasting for Mass Transit Stations
+
+---
+
+## 1. Arsitektur Sistem (High-Level)
+
+```
+[Raw Data: MTA Hourly Ridership CSV]
+            |
+            v
+   [0. Data Profiling (cek rentang tanggal & jumlah station_complex aktual)]
+            |
+            v
+   [1. Data Ingestion & Cleaning]
+            |
+            v
+   [2. Exploratory Data Analysis]
+            |
+            v
+   [3. Feature Engineering (Lag Features)]
+            |
+            v
+   [4. Train/Test Split (time-based)]
+            |
+            v
+   [5. Model Training (LightGBM)]
+            |
+            v
+   [6. Evaluasi Model (MAE/RMSE vs baseline)]
+            |
+            v
+   [7. Export Prediksi + Model Artifact]
+            |
+            v
+   [8. Dashboard Interaktif (Streamlit/Plotly Dash)]
+            |
+            v
+   [9. Dokumentasi & Data Storytelling]
+```
+
+**Prinsip desain:** satu model global (bukan per-stasiun), split waktu (bukan random), scope data mengikuti hasil profiling aktual — seluruh rentang waktu dan seluruh `station_complex` yang tersedia di dataset, bukan dibatasi angka asumsi (3-5 stasiun/1-3 bulan).
+
+---
+
+## 2. Struktur Folder
+
+```
+project-root/
+├── data/
+│   ├── raw/              # dataset asli dari Kaggle (belum diubah)
+│   └── processed/        # hasil cleaning + feature engineering
+├── notebooks/
+│   ├── 01_eda.ipynb
+│   ├── 02_feature_engineering.ipynb
+│   └── 03_modeling_lightgbm.ipynb
+├── src/
+│   ├── data_prep.py      # fungsi loading, cleaning, reindex timestamp
+│   ├── features.py        # fungsi generate lag/rolling/kalender features
+│   ├── train.py           # training LightGBM + evaluasi
+│   └── predict.py         # load model, generate prediksi baru
+├── models/
+│   └── lightgbm_model.pkl (atau .txt via booster.save_model)
+├── dashboard/
+│   └── app.py             # Streamlit/Plotly Dash app
+├── README.md
+└── PLAN.md
+```
+
+---
+
+## 3. Tahapan Pengerjaan End-to-End
+
+### Tahap 0 — Setup & Data Profiling
+- Buat struktur folder di atas
+- Install dependencies: `pandas`, `numpy`, `lightgbm`, `scikit-learn`, `plotly`, `streamlit` (atau `dash`)
+- Download dataset MTA dari Kaggle, simpan di `data/raw/`
+- **Profiling wajib sebelum menentukan scope:**
+  - `df['transit_timestamp'].min()` dan `.max()` → tentukan rentang tanggal aktual dataset
+  - `df['station_complex'].nunique()` → tentukan jumlah stasiun aktual
+  - Cek jumlah baris total dan ukuran file, untuk estimasi kebutuhan memori/waktu proses
+- Gunakan seluruh rentang waktu dan seluruh station_complex hasil profiling sebagai scope kerja — jangan hardcode angka (misal "3-5 stasiun" atau "1-3 bulan") sebelum tahu data aktualnya
+
+### Tahap 1 — Data Ingestion & Cleaning
+- Load CSV (gunakan Polars untuk performa karena volume data besar), parse `transit_timestamp` jadi datetime
+- Gunakan seluruh `station_complex` dan seluruh rentang waktu dari hasil profiling Tahap 0 — kecualikan stasiun hanya jika ditemukan alasan teknis (data terlalu sedikit/tidak lengkap), catat alasannya
+- Cek dan tangani missing timestamp per stasiun (reindex ke rentang jam penuh, isi gap dengan interpolasi/0 sesuai konteks)
+- Cek outlier ekstrem (misal entries negatif atau lonjakan tidak wajar)
+- Simpan hasil bersih ke `data/processed/cleaned.parquet` (parquet lebih efisien dari CSV untuk data besar)
+
+### Tahap 2 — Exploratory Data Analysis
+- Distribusi jumlah penumpang per jam (line/area chart)
+- Pola per hari dalam seminggu (heatmap hour x day_of_week)
+- Perbandingan antar stasiun (bar chart ranking volume)
+- Deteksi jam sibuk (peak hour) dan perbedaan weekday vs weekend
+- Ringkas insight EDA jadi 3-5 poin kunci untuk narasi
+
+### Tahap 3 — Feature Engineering
+- Fitur lag: `lag_1h`, `lag_24h`, `lag_168h`
+- Rolling mean: 3 jam, 24 jam
+- Fitur kalender: `hour_of_day`, `day_of_week`, `is_weekend`, `month`
+- Fitur kategorikal: `station_complex`, `borough` (encode sebagai category type untuk LightGBM)
+- Drop baris awal yang lag-nya NaN
+- Simpan ke `data/processed/features.csv`
+
+### Tahap 4 — Train/Test Split
+- Split berbasis waktu, proporsional terhadap rentang data aktual (bukan angka tetap "2 minggu") — misal 80% awal untuk train, 10% berikutnya untuk validation, 10% terakhir untuk test
+- Sebelum split final, cek apakah window test mengandung anomali (hari libur/event besar) — geser window jika perlu
+- Pastikan tidak ada kebocoran data (fitur lag hanya pakai data masa lalu)
+
+### Tahap 5 — Modeling dengan LightGBM
+- Baseline pembanding: naive forecast (nilai minggu lalu di jam yang sama) dan/atau rolling average
+- Training LightGBM Regressor dengan fitur di atas
+- Tuning ringan: `num_leaves`, `learning_rate`, `n_estimators` (grid kecil atau manual, jangan tuning berlebihan)
+- Pakai `mlflow.lightgbm.autolog()` untuk mencatat eksperimen
+
+### Tahap 6 — Fine-Tuning LightGBM
+- Gunakan validation split terpisah (bukan test set) dari bagian akhir train set, tetap berbasis waktu — misal 1 minggu terakhir dari train set jadi validation
+- Tuning parameter kunci secara bertahap, jangan grid search penuh (terlalu lama):
+  - `num_leaves`, `max_depth` — kontrol kompleksitas model
+  - `learning_rate` + `n_estimators` (pakai `early_stopping_rounds` supaya otomatis berhenti saat validation loss tidak membaik)
+  - `min_data_in_leaf` — cegah overfitting pada stasiun dengan data lebih sedikit
+  - `feature_fraction`, `bagging_fraction` — regularisasi tambahan jika masih overfit
+- Gunakan Optuna untuk pencarian otomatis dengan budget terbatas (misal 15-20 trial), bukan grid search penuh
+- Bandingkan skor validation sebelum vs sesudah tuning, catat parameter final yang dipakai
+- Log setiap trial ke MLflow untuk dibandingkan di UI
+
+### Tahap 7 — Evaluasi Model
+- Hitung MAE dan RMSE di test set (data yang belum pernah dilihat sama sekali, terpisah dari validation), bandingkan dengan baseline dan dengan model sebelum fine-tuning
+- Plot aktual vs prediksi (time-series overlay)
+- Ekstrak dan visualisasikan feature importance dari LightGBM
+- Simpan hasil evaluasi ke laporan singkat
+
+### Tahap 8 — Export Model & Prediksi
+- Simpan model terlatih (dengan parameter hasil fine-tuning) ke `models/`
+- Generate file prediksi untuk periode test (dipakai dashboard)
+
+### Tahap 9 — Dashboard Interaktif
+- Bangun 1 halaman dashboard (Streamlit direkomendasikan untuk kecepatan development):
+  - Filter: pilih stasiun, rentang waktu
+  - Grafik aktual vs prediksi per jam
+  - Ringkasan metrik (MAE/RMSE) dan feature importance
+  - Tabel/insight jam sibuk per stasiun
+- *(Stretch goal, opsional)* peta kepadatan per stasiun
+
+### Tahap 10 — Dokumentasi & Data Storytelling
+- Lengkapi README dengan hasil akhir (angka MAE/RMSE, insight EDA, screenshot dashboard)
+- Tulis 3-5 kalimat ringkasan naratif untuk konteks operasional (siap dipakai di CV/portofolio/interview)
+
+---
+
+## 4. Tech Stack
+
+| Komponen | Tools |
+|---|---|
+| Data processing | Polars (ingestion/cleaning, performa untuk data besar), pandas (dipakai ulang saat modeling) |
+| Modeling | LightGBM, scikit-learn (metrics, split) |
+| Tuning & tracking | Optuna, MLflow (autolog) |
+| Visualisasi/EDA | plotly |
+| Dashboard | Streamlit |
+| Version control | Git + GitHub (untuk showcase di CV) |
+
+---
+
+## 5. Risiko & Mitigasi
+
+| Risiko | Mitigasi |
+|---|---|
+| Dataset besar, loading/proses lambat | Gunakan Polars dan format parquet, proses secara chunked/lazy jika perlu |
+| Gap timestamp merusak fitur lag | Reindex per stasiun ke jam penuh sebelum feature engineering |
+| Overfitting karena tuning berlebihan | Batasi budget trial Optuna, andalkan validation set terpisah dari test set |
+| Kompleksitas dashboard dengan banyak stasiun | Siapkan versi notebook-only sebagai fallback jika dashboard belum stabil |
+| Data leakage saat split | Selalu split berbasis waktu, cek ulang tidak ada fitur yang "melihat" masa depan |
