@@ -18,3 +18,9 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Artefak build deck presentasi (regeneratable via presentation/build_deck.js)
+presentation/render/
+presentation/*.pdf
+node_modules/
+package-lock.json
