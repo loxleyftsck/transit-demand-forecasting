@@ -48,9 +48,8 @@ def export_model_to_mlflow(booster: lgb.Booster) -> str:
     return model_info.model_uri
 
 
-def generate_predictions() -> pd.DataFrame:
+def generate_predictions(booster: lgb.Booster) -> pd.DataFrame:
     test = pd.read_parquet(PROCESSED_DIR / "test.parquet")
-    booster = lgb.Booster(model_file=str(FINAL_MODEL_PATH))
 
     out = test[ID_COLS + [TARGET_COL]].copy()
     out["pred_lgbm_tuned"] = booster.predict(test[FEATURE_COLS])
@@ -67,7 +66,7 @@ def run() -> None:
     export_model_to_mlflow(booster)
 
     logger.info("Generate prediksi untuk test set...")
-    preds = generate_predictions()
+    preds = generate_predictions(booster)
     preds.to_parquet(PREDICTIONS_PARQUET, index=False)
 
     logger.info("=== RINGKASAN EXPORT & PREDIKSI ===")

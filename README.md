@@ -114,7 +114,7 @@ python src/download_data.py
 
 ### 3. Jalankan pipeline berurutan
 ```bash
-python src/data_prep.py      # cleaning -> data/processed/cleaned.parquet
+python src/data_prep.py      # cleaning -> data/processed/cleaned.parquet + station_locations.parquet
 python src/features.py       # feature engineering -> data/processed/features.parquet
 python src/split.py          # time-based split -> train/val/test.parquet
 python src/train.py          # tuning Optuna + MLflow -> models/best_params.json
@@ -140,7 +140,7 @@ mlflow ui --backend-store-uri ./mlruns
 project-root/
 ├── data/
 │   ├── raw/                 # dataset asli (CSV, tidak di-commit karena besar)
-│   └── processed/           # cleaned/features/train/val/test/predictions.parquet
+│   └── processed/           # cleaned/features/train/val/test/predictions/station_locations.parquet
 ├── notebooks/
 │   └── 01_eda.ipynb
 ├── src/

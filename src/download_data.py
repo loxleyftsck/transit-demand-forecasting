@@ -20,6 +20,7 @@ from pathlib import Path
 
 RAW_DIR = Path(__file__).resolve().parent.parent / "data" / "raw"
 DATASET = "yaminh/mta-subway-hourly-ridership-2022-to-2024"
+EXPECTED_CSV_NAME = "MTA_Subway_Hourly_Ridership.csv"
 
 
 def main():
@@ -49,6 +50,14 @@ def main():
         with zipfile.ZipFile(zf, "r") as z:
             z.extractall(RAW_DIR)
         zf.unlink()
+
+    # src/data_prep.py mengharapkan nama file persis EXPECTED_CSV_NAME -- kalau
+    # Kaggle mengekstrak dengan nama lain, rename supaya pipeline tetap jalan.
+    csv_files = list(RAW_DIR.glob("*.csv"))
+    expected_path = RAW_DIR / EXPECTED_CSV_NAME
+    if len(csv_files) == 1 and csv_files[0] != expected_path:
+        csv_files[0].rename(expected_path)
+        print(f"Rename {csv_files[0].name} -> {EXPECTED_CSV_NAME}")
 
     print("Selesai. File tersedia di data/raw/.")
 
