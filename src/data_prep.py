@@ -18,8 +18,12 @@ CATATAN skema data aktual (berbeda dari asumsi awal brief):
     proyek (jumlah penumpang per stasiun per jam).
   - Kolom kategori tarif bernama `fare_class_category` (bukan `fare_type`).
   - Ada kolom tambahan `latitude`, `longitude`, `Georeference` — tidak dipakai
-    untuk forecasting per-jam, jadi di-drop setelah agregasi (nilainya konstan
-    per stasiun sehingga tidak hilang informasi).
+    untuk forecasting per-jam, jadi di-drop dari cleaned.parquet (nilainya
+    hampir konstan per stasiun). Koordinatnya tetap diekstrak terpisah ke
+    data/processed/station_locations.parquet untuk kebutuhan peta di dashboard
+    (lihat extract_station_locations()). 27 stasiun punya sedikit variasi
+    lat/long antar baris (beda entrance/platform, <500m) -- diambil rata-rata
+    per stasiun supaya representatif.
   - `station_complex_id` bukan selalu integer (ada "TRAM1", "TRAM2" untuk
     Roosevelt Island Tramway), jadi dibaca sebagai string.
   - `transit_mode` punya 3 nilai: subway, staten_island_railway, tram. Ketiganya
@@ -46,6 +50,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_CSV = PROJECT_ROOT / "data" / "raw" / "MTA_Subway_Hourly_Ridership.csv"
 OUT_PARQUET = PROJECT_ROOT / "data" / "processed" / "cleaned.parquet"
+STATION_LOCATIONS_PARQUET = PROJECT_ROOT / "data" / "processed" / "station_locations.parquet"
 
 TIMESTAMP_FORMAT = "%m/%d/%Y %I:%M:%S %p"
 
@@ -59,6 +64,27 @@ KNOWN_BAD_ROWS = [
 # jam sibuk/event besar tidak ikut terpotong, hanya nilai yang benar-benar
 # ekstrem (mis. salah input / duplikasi) yang di-cap.
 IQR_MULTIPLIER = 3.0
+
+
+def extract_station_locations(lf: pl.LazyFrame) -> pl.DataFrame:
+    """Ekstrak koordinat unik per stasiun (untuk peta di dashboard) dari kolom
+    latitude/longitude yang di-drop dari cleaned.parquet. Diambil rata-rata
+    per stasiun karena 27 stasiun punya beberapa baris dengan lat/long sedikit
+    berbeda (variasi entrance/platform, <500m)."""
+    loc = lf.group_by(["station_complex_id", "station_complex", "borough", "transit_mode"]).agg(
+        [
+            pl.col("latitude").mean().alias("latitude"),
+            pl.col("longitude").mean().alias("longitude"),
+        ]
+    ).collect(streaming=True)
+
+    for bad in KNOWN_BAD_ROWS:
+        cond = pl.lit(True)
+        for k, v in bad.items():
+            cond = cond & (pl.col(k) == v)
+        loc = loc.filter(~cond)
+
+    return loc
 
 
 def scan_raw() -> pl.LazyFrame:
@@ -225,6 +251,13 @@ def run() -> None:
 
     lf = scan_raw()
     raw_profile = profile_raw(lf)
+
+    station_locations = extract_station_locations(lf)
+    station_locations.write_parquet(STATION_LOCATIONS_PARQUET)
+    logger.info(
+        "Koordinat stasiun disimpan ke: %s (%s stasiun)",
+        STATION_LOCATIONS_PARQUET, station_locations.height,
+    )
 
     sink_reduced_columns(lf)
 

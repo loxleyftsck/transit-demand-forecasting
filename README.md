@@ -91,6 +91,7 @@ Titik potong 80% murni jatuh tepat di tengah periode libur Natal/Tahun Baru (rid
 ## Dashboard
 
 [dashboard/app.py](dashboard/app.py) — Streamlit, 1 halaman, berisi:
+- **Peta seluruh 428 stasiun** (Plotly `scatter_mapbox`, gaya open-street-map tanpa token) — ukuran & warna titik merepresentasikan total volume ridership 2022-2024, stasiun yang dipilih di sidebar disorot dengan titik merah besar. Koordinat diekstrak dari kolom `latitude`/`longitude` data mentah (lihat `extract_station_locations()` di [src/data_prep.py](src/data_prep.py)) yang di-drop dari `cleaned.parquet` karena tidak dipakai untuk forecasting, lalu disimpan terpisah ke `data/processed/station_locations.parquet` khusus untuk kebutuhan peta ini.
 - Filter stasiun (428 pilihan) + rentang waktu (periode test).
 - Ringkasan metrik: tabel MAE/RMSE keseluruhan test set berdampingan dengan metrik ter-filter khusus stasiun/rentang yang dipilih.
 - Grafik aktual vs prediksi per jam (Plotly interaktif: aktual, LightGBM tuned, naive).

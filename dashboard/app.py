@@ -5,6 +5,7 @@ Jalankan dengan:
     streamlit run dashboard/app.py
 
 Menampilkan:
+  - Peta seluruh stasiun (ukuran/warna = volume ridership, stasiun terpilih di-highlight)
   - Filter stasiun & rentang waktu
   - Grafik aktual vs prediksi per jam (LightGBM tuned vs naive)
   - Ringkasan metrik (MAE/RMSE, baseline vs model)
@@ -44,6 +45,11 @@ def load_metrics_table() -> pd.DataFrame:
     return pd.read_csv(MODELS_DIR / "evaluation_metrics.csv")
 
 
+@st.cache_data
+def load_station_locations() -> pd.DataFrame:
+    return pd.read_parquet(PROCESSED_DIR / "station_locations.parquet")
+
+
 @st.cache_resource
 def load_booster() -> lgb.Booster:
     return lgb.Booster(model_file=str(MODELS_DIR / "lightgbm_final.txt"))
@@ -57,6 +63,7 @@ preds = load_predictions()
 cleaned = load_cleaned()
 metrics_table = load_metrics_table()
 booster = load_booster()
+station_locations = load_station_locations()
 
 st.title("Hourly Passenger Demand Forecasting for Mass Transit Stations")
 st.caption(
@@ -93,6 +100,32 @@ mask = (
     & (preds["transit_timestamp"].dt.date <= end_date)
 )
 filtered = preds[mask].sort_values("transit_timestamp")
+
+# --- Peta stasiun ---
+st.subheader("Peta Mass Transit Stations")
+st.caption("Ukuran & warna titik = total volume ridership (2022-2024). Stasiun terpilih ditandai titik merah besar.")
+
+station_totals = (
+    cleaned.groupby("station_complex", observed=True)["entries"].sum().reset_index(name="total_entries")
+)
+map_df = station_locations.merge(station_totals, on="station_complex", how="left")
+
+fig_map = px.scatter_mapbox(
+    map_df, lat="latitude", lon="longitude",
+    size="total_entries", color="borough",
+    hover_name="station_complex",
+    hover_data={"total_entries": ":,", "latitude": False, "longitude": False, "borough": False},
+    size_max=28, zoom=9.3, height=550,
+    mapbox_style="open-street-map",
+)
+selected_row = map_df[map_df["station_complex"] == station]
+fig_map.add_trace(go.Scattermapbox(
+    lat=selected_row["latitude"], lon=selected_row["longitude"],
+    mode="markers", marker=dict(size=26, color="red"),
+    name="Stasiun terpilih", hoverinfo="skip",
+))
+fig_map.update_layout(margin=dict(l=0, r=0, t=0, b=0), legend=dict(orientation="h", yanchor="bottom", y=1.01))
+st.plotly_chart(fig_map, use_container_width=True)
 
 # --- Ringkasan metrik ---
 st.subheader("Ringkasan Metrik")
