@@ -1,0 +1,23 @@
+# CUDA 12.8 wheel; for NVIDIA GPU benchmark environment on Windows.
+--extra-index-url https://download.pytorch.org/whl/cu128
+torch==2.9.1+cu128
+timesfm==3.0.2
+chronos-forecasting==2.3.2
+neuralforecast==3.2.2
+transformers==5.19.0
+accelerate==1.15.0
+einops==0.8.2
+numpy==1.26.4
+pandas==2.2.2
+pyarrow==25.0.1
+lightgbm==4.3.0
+scikit-learn==1.4.2
+scipy==1.13.1
+plotly==5.20.0
+streamlit==1.33.0
+pytorch-lightning==2.5.6
+huggingface-hub==1.33.0
+utilsforecast==0.2.17
+coreforecast==0.0.18
+optuna==5.0.0
+ray==2.59.0

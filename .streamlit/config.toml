@@ -1,0 +1,12 @@
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f9f9f7"
+secondaryBackgroundColor = "#f0efec"
+textColor = "#0b0b0b"
+font = "sans serif"
+
+[client]
+# Sembunyikan menu pengaturan (termasuk ganti tema) supaya chart yang diwarnai
+# eksplisit untuk surface terang tidak bercampur dengan tema gelap bawaan.
+toolbarMode = "minimal"

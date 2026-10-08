@@ -1,0 +1,16 @@
+{
+  "model": "google/timesfm-3.0-pytorch",
+  "package_version": "3.0.2",
+  "checkpoint_revision": "43046b85ec22d584a13f8098c2ed39c889e129c2",
+  "torch_version": "2.7.1+cu128",
+  "torch_cuda": "12.8",
+  "device": "cuda",
+  "context_length": 512,
+  "forecast_horizon_hours": 24,
+  "test_start": "2024-03-15 00:00:00",
+  "test_end_evaluated": "2024-05-19 23:00:00",
+  "origins": 66,
+  "stations": 428,
+  "scored_rows": 677952,
+  "notes": "Non-overlapping 24-hour forecasts; actual values strictly before each forecast origin only. Last incomplete test hours are omitted. Existing one-step LightGBM metrics are not directly comparable to these 24-hour recursive forecasts."
+}

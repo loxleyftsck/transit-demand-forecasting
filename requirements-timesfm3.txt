@@ -1,0 +1,11 @@
+# Optional, isolated environment for the TimesFM 3.0 benchmark.
+# On Windows + NVIDIA CUDA 12.8, install this GPU build first:
+#   python -m pip install torch==2.7.1+cu128 --index-url https://download.pytorch.org/whl/cu128
+timesfm==3.0.2
+numpy==1.26.4
+pandas==2.2.2
+pyarrow==25.0.1
+lightgbm==4.3.0
+scikit-learn==1.4.2
+scipy==1.13.1
+plotly==5.20.0

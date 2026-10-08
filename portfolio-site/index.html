@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f2eb">
+  <meta name="description" content="Hasil benchmark forecasting penumpang MTA per stasiun per jam: Chronos-2, TimesFM, PatchTST, LightGBM, dan baseline mingguan.">
+  <title>MTA Ridership Forecast | Data portfolio</title>
+  <script src="./assets/plotly.min.js" defer></script>
+  <style>
+    :root{--paper:#f5f2eb;--white:#fffefa;--ink:#18251f;--muted:#64716a;--line:#d9ddd5;--navy:#162d27;--green:#315f4b;--orange:#e66e3f;--yellow:#edb949;--blue:#4c83a8;--red:#c85148;--serif:Georgia,"Times New Roman",serif;--sans:Arial,"Segoe UI",sans-serif;--mono:"SFMono-Regular",Consolas,monospace}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55}a{color:inherit}button,select{font:inherit}.shell{width:min(1160px,calc(100% - 48px));margin:auto}.topbar{height:72px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);font-size:12px;text-transform:uppercase;letter-spacing:.11em}.brand{display:flex;align-items:center;gap:11px;font-weight:800}.brand-mark{width:26px;height:26px;border:2px solid var(--green);border-radius:50%;position:relative}.brand-mark:before,.brand-mark:after{content:"";position:absolute;background:var(--green)}.brand-mark:before{width:2px;height:27px;left:10px;top:-3px;transform:rotate(45deg)}.brand-mark:after{width:27px;height:2px;left:-3px;top:10px;transform:rotate(45deg)}.navlink{text-decoration:none;color:var(--muted);font-weight:700}.navlink:hover{color:var(--orange)}
+    .hero{padding:72px 0 52px;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(260px,.65fr);gap:56px;align-items:end}.eyebrow,.section-kicker{font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.14em;color:var(--green)}h1,h2,h3,p{margin-top:0}h1{font:500 clamp(46px,7vw,82px)/.99 var(--serif);letter-spacing:-.055em;max-width:760px;margin:22px 0}.hero-copy{font-size:17px;color:#46564d;max-width:640px}.hero-aside{border-left:1px solid #aeb9ae;padding:7px 0 5px 24px;color:var(--muted);font-size:13px}.hero-aside strong{display:block;font:500 28px var(--serif);color:var(--ink);margin:4px 0 12px}.hero-aside .route{margin-top:20px;display:flex;align-items:center;gap:8px;color:var(--green);font:700 11px var(--mono);text-transform:uppercase}.route i{height:7px;width:7px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 4px #e66e3f22}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 0 86px}.stat{padding:22px 24px 24px 0}.stat+.stat{border-left:1px solid var(--line);padding-left:24px}.stat-label{font:700 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}.stat-value{font:500 clamp(24px,3vw,34px) var(--serif);letter-spacing:-.035em;margin:8px 0 1px}.stat-note{font-size:12px;color:var(--muted)}
+    section{margin:0 0 88px}.section-head{display:grid;grid-template-columns:1fr minmax(220px,390px);gap:35px;align-items:end;margin-bottom:24px}.section-head h2{font:500 clamp(31px,4vw,46px)/1.05 var(--serif);letter-spacing:-.035em;margin:9px 0 0}.section-head p{color:var(--muted);font-size:13px;margin-bottom:2px}.split{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);gap:18px}.panel{background:var(--white);border:1px solid var(--line);border-radius:5px;padding:22px}.panel-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}.panel-title h3{font:600 15px var(--sans);margin:0}.panel-title small{font:11px var(--mono);color:var(--muted)}.chart{width:100%;height:350px}.chart.short{height:300px}.chart.map{height:470px}.model-list{margin:0;padding:0;list-style:none}.model-list li{display:grid;grid-template-columns:24px minmax(110px,1fr) minmax(70px,1.1fr) 57px;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid #e8e9e3;font-size:12px}.model-list li:last-child{border:0}.rank{font:11px var(--mono);color:var(--muted)}.bar-track{height:6px;background:#eaebe5;border-radius:8px;overflow:hidden}.bar-fill{height:100%;background:#99a99e;border-radius:8px}.winner .bar-fill{background:var(--orange)}.winner .model-name{font-weight:800}.mae{font:12px var(--mono);text-align:right}.callout{margin-top:18px;background:#f4eee2;border-left:3px solid var(--yellow);padding:14px 16px;font-size:12px;color:#5f5849}.callout strong{color:var(--ink)}.note{color:var(--muted);font-size:12px;margin:12px 0 0}
+    .control-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:12px 0 4px}.control-row label{font:700 10px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.control-row select{border:1px solid var(--line);background:white;border-radius:3px;padding:9px 32px 9px 11px;color:var(--ink);min-width:190px;max-width:100%}.borough-label{margin-left:auto}.insights{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;border-top:1px solid var(--line);padding-top:20px}.insight-num{font:12px var(--mono);color:var(--orange)}.insights h3{font:500 22px var(--serif);margin:8px 0}.insights p{color:var(--muted);font-size:13px;margin:0}.method{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.method article{border-top:2px solid var(--green);padding-top:13px}.method h3{font-size:13px;margin:0 0 7px}.method p{font-size:12px;color:var(--muted);margin:0}.foot{background:var(--navy);color:#e8eee8;padding:34px 0;margin-top:100px}.foot-inner{display:flex;justify-content:space-between;gap:30px;align-items:start;font-size:12px}.foot a{color:#f3c66b}.foot p{max-width:650px;color:#c4d0c8;margin:7px 0 0}.loading{color:var(--muted);padding:30px 0}.error{background:#fff2ef;color:#8c332b;padding:18px;border-radius:4px}
+    @media(max-width:760px){.shell{width:min(100% - 32px,600px)}.topbar{height:60px}.hero{padding:52px 0 34px;grid-template-columns:1fr;gap:22px}.hero-aside{max-width:440px}.summary{grid-template-columns:1fr 1fr;margin-bottom:64px}.stat{padding:17px 12px 18px 0}.stat:nth-child(3){border-left:0;padding-left:0;border-top:1px solid var(--line)}.stat:nth-child(4){border-top:1px solid var(--line)}.stat+.stat{padding-left:14px}.section-head{grid-template-columns:1fr;gap:10px}.split{grid-template-columns:1fr}.panel{padding:16px}.chart{height:330px}.chart.map{height:400px}.borough-label{margin-left:0}.insights,.method{grid-template-columns:1fr;gap:20px}.foot-inner{display:block}.foot-inner>div+div{margin-top:18px}.model-list li{grid-template-columns:18px minmax(95px,1fr) minmax(55px,.8fr) 52px;gap:7px;font-size:11px}}
+    @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+  </style>
+  <style>
+    html{scroll-padding-top:88px}body{overflow-x:clip}.topbar{position:sticky;top:0;z-index:20;background:#f5f2ebed;backdrop-filter:blur(12px)}
+    .nav-actions{display:flex;align-items:center;gap:24px}.navlink.primary{color:var(--green)}
+    .hero{padding-bottom:34px}.hero-visual{height:clamp(230px,34vw,385px);position:relative;border-radius:10px;overflow:hidden;margin-bottom:34px;background:var(--navy)}
+    .hero-visual img{width:100%;height:100%;object-fit:cover;object-position:center 54%;display:block;filter:saturate(.78)}
+    .hero-visual:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#101d18dd 0%,#101d1870 50%,#101d1808 100%),linear-gradient(0deg,#101d1866,transparent 55%)}
+    .visual-copy{position:absolute;z-index:1;left:clamp(22px,5vw,64px);bottom:clamp(22px,4vw,50px);color:#fff;max-width:560px}
+    .visual-copy span{font:700 11px var(--mono);letter-spacing:.15em;color:#f0be71}.visual-copy h2{font:500 clamp(28px,4.4vw,52px)/1.04 var(--serif);letter-spacing:-.03em;margin:12px 0 0}
+    .visual-stamp{position:absolute;z-index:1;right:30px;top:28px;color:#fff;border:1px solid #ffffff8a;border-radius:99px;padding:8px 12px;font:700 10px var(--mono);letter-spacing:.1em}
+    .panel{border-radius:10px;box-shadow:0 10px 34px #233b2c0b}.film-section{display:grid;grid-template-columns:minmax(220px,.55fr) minmax(0,1.45fr);gap:32px;align-items:center;background:var(--navy);color:#f3f5ef;padding:24px;border-radius:10px;margin-bottom:88px}
+    .film-copy .section-kicker{color:#f0be71}.film-copy h2{font:500 clamp(28px,3.5vw,42px)/1.05 var(--serif);margin:12px 0}.film-copy p{font-size:13px;color:#c8d2ca;margin-bottom:0}
+    .film-frame{border-radius:7px;overflow:hidden;background:#0c1713;aspect-ratio:16/9}.film-frame video{width:100%;height:100%;object-fit:cover;display:block}.film-caption{font:11px var(--mono);color:#c8d2ca;margin:10px 0 0}
+    @media(max-width:760px){.nav-actions{gap:14px}.navlink{font-size:10px}.hero{padding-bottom:28px}.hero-visual{height:270px;margin-bottom:28px}.visual-stamp{right:14px;top:14px}.film-section{grid-template-columns:1fr;padding:17px;gap:17px;margin-bottom:64px}}
+    @media(max-width:420px){.navlink{letter-spacing:.04em}.nav-actions{gap:10px}.nav-actions .navlink:first-child{display:none}.hero-visual{height:240px}.visual-copy{left:20px;bottom:20px}.visual-copy h2{font-size:29px}.panel-title small{font-size:9px}.control-row select{width:100%;min-width:0}.borough-label{margin:8px 0 0}}
+  </style>
+</head>
+<body>
+  <header class="shell topbar">
+    <a class="brand" href="#top" aria-label="Transit Data Portfolio"><span class="brand-mark" aria-hidden="true"></span><span>Transit / Data</span></a>
+    <nav class="nav-actions" aria-label="Navigasi utama"><a class="navlink" href="#results">Hasil benchmark <span aria-hidden="true">↘</span></a><a class="navlink primary" href="#film">Tonton video <span aria-hidden="true">▶</span></a></nav>
+  </header>
+
+  <main id="top" class="shell">
+    <div id="load-state" class="loading">Memuat ringkasan benchmark…</div>
+    <div id="content" hidden>
+      <section class="hero">
+        <div>
+          <div class="eyebrow">MTA NEW YORK · FORECASTING PER JAM · 2022—2024</div>
+          <h1>Membaca ritme kota, satu hari ke depan.</h1>
+          <p class="hero-copy">Benchmark forecasting jumlah <em>entries</em> di stasiun subway New York. Lima pendekatan diuji pada jendela waktu dan kelompok stasiun yang sama.</p>
+        </div>
+        <aside class="hero-aside">
+          <span>Model dengan MAE terendah pada benchmark 24 jam</span>
+          <strong id="hero-model">Chronos-2</strong>
+          <span id="hero-score"></span>
+          <div class="route"><i></i><span id="period-label"></span></div>
+        </aside>
+      </section>
+
+      <section class="hero-visual" aria-label="Visual stasiun subway New York">
+        <img src="./assets/subway-platform.jpg" alt="Kereta subway memasuki stasiun bawah tanah di New York" fetchpriority="high">
+        <div class="visual-copy"><span>MTA NEW YORK · DATA STORY</span><h2>Satu jaringan.<br>Ritme yang berubah setiap jam.</h2></div>
+        <span class="visual-stamp">2022—2024 / HOURLY</span>
+      </section>
+
+      <div class="summary" id="summary-stats"></div>
+
+      <section id="results">
+        <div class="section-head">
+          <div><div class="section-kicker">01 / MODEL COMPARISON</div><h2>Model mana yang paling dekat?</h2></div>
+          <p>Skor dihitung per observasi stasiun-jam, pada 66 origin harian yang tidak tumpang tindih. MAE dan RMSE lebih rendah berarti lebih baik.</p>
+        </div>
+        <div class="split">
+          <article class="panel">
+            <div class="panel-title"><h3>MAE · benchmark 24 jam</h3><small>entries / stasiun-jam</small></div>
+            <div id="model-chart" class="chart short" aria-label="Grafik MAE benchmark per model"></div>
+            <p class="note">Chronos-2 unggul tipis dari LightGBM rekursif; PatchTST tertinggal pada run ini.</p>
+          </article>
+          <article class="panel">
+            <div class="panel-title"><h3>Ringkasan skor</h3><small id="score-count"></small></div>
+            <ol id="model-list" class="model-list"></ol>
+            <div class="callout"><strong>Batas evaluasi.</strong> Jendela test ini pernah diperiksa dalam iterasi proyek sebelumnya. Hasilnya eksploratif, bukan evaluasi final pada holdout yang sepenuhnya baru.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="film-section" id="film" aria-labelledby="film-title">
+        <div class="film-copy"><div class="section-kicker">PROJECT FILM · 30 DETIK</div><h2 id="film-title">Forecasting, dalam satu perjalanan.</h2><p>Ringkasan visual tentang cakupan data, perbandingan model, pola jam sibuk, dan batas interpretasi hasil.</p></div>
+        <div><div class="film-frame"><video controls playsinline preload="metadata" poster="./assets/video-poster.jpg" aria-label="Video ringkasan proyek forecasting MTA"><source src="./assets/project-explainer.mp4" type="video/mp4">Browser ini belum mendukung pemutaran video.</video></div><p class="film-caption">RINGKASAN PROYEK · 00:30 · TANPA SUARA</p></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div><div class="section-kicker">02 / FORECAST SHAPE</div><h2>Contoh satu hari di test set.</h2></div>
+          <p>Jumlah entries seluruh stasiun dijumlahkan per jam untuk origin terakhir yang tersedia. Gunakan pilihan stasiun untuk melihat prediksi per lokasi.</p>
+        </div>
+        <article class="panel">
+          <div class="panel-title"><h3 id="forecast-title">Aktual vs prediksi</h3><small>HORIZON · 24 JAM</small></div>
+          <div class="control-row">
+            <label for="station-select">Stasiun</label><select id="station-select" aria-label="Pilih stasiun"></select>
+            <label class="borough-label" for="borough-select">Borough peta</label><select id="borough-select" aria-label="Filter borough peta"></select>
+          </div>
+          <div id="forecast-chart" class="chart" aria-label="Grafik aktual dibandingkan forecast 24 jam"></div>
+        </article>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div><div class="section-kicker">03 / STATION NETWORK</div><h2>Permintaan tersebar di seluruh jaringan.</h2></div>
+          <p>Peta merangkum total entries pada periode benchmark. Titik dan warna membantu membandingkan stasiun; arahkan kursor untuk nama dan volumenya.</p>
+        </div>
+        <article class="panel">
+          <div class="panel-title"><h3>Volume tercatat per stasiun</h3><small id="map-count"></small></div>
+          <div id="station-map" class="chart map" aria-label="Peta interaktif volume stasiun MTA"></div>
+        </article>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div><div class="section-kicker">04 / OPERATING RHYTHM</div><h2>Puncak permintaan datang sore hari.</h2></div>
+          <p>Rata-rata entries untuk setiap jam dihitung dari semua observasi stasiun-jam yang tersedia pada periode evaluasi one-step.</p>
+        </div>
+        <article class="panel">
+          <div class="panel-title"><h3>Profil rata-rata per jam</h3><small>AGREGAT STASIUN</small></div>
+          <div id="hour-chart" class="chart short" aria-label="Profil rata-rata entries untuk setiap jam"></div>
+        </article>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div><div class="section-kicker">05 / WHAT THE RESULTS SAY</div><h2>Tiga catatan dari benchmark ini.</h2></div>
+          <p>Interpretasi dibatasi pada data yang diuji. Entries adalah catatan masuk fare gate, bukan hitungan orang unik.</p>
+        </div>
+        <div class="insights" id="insights"></div>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <div><div class="section-kicker">06 / METHOD</div><h2>Ruang lingkup dan metodologi.</h2></div>
+          <p>Output ini adalah ringkasan statis hasil eksperimen. Tidak ada model yang dijalankan di halaman publik.</p>
+        </div>
+        <div class="method">
+          <article><h3>Dataset</h3><p id="method-data"></p></article>
+          <article><h3>Perbandingan adil</h3><p>Semua model memakai station set, target waktu, konteks, dan 24 jam horizon yang sama. Baseline weekly-naive memakai nilai pada jam yang sama minggu sebelumnya.</p></article>
+          <article><h3>Model deployment</h3><p>Halaman menyajikan hasil yang telah dihitung sebelumnya: metrik, profil jam, peta agregat, dan contoh forecast terakhir. Tidak ada klaim forecast real-time.</p></article>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot"><div class="shell foot-inner">
+    <div><strong>TRANSIT / DATA</strong><p>Hourly Passenger Demand Forecasting for Mass Transit Stations</p></div>
+    <div><a href="https://www.kaggle.com/datasets/yaminh/mta-subway-hourly-ridership-2022-to-2024" target="_blank" rel="noreferrer">Sumber data MTA di Kaggle ↗</a><p>Data sumber: MTA Subway Hourly Ridership 2022–2024 · Visualisasi: Plotly · Peta dasar: OpenStreetMap.</p></div>
+  </div></footer>
+
+  <script>
+    const PALETTE={ink:"#18251f",muted:"#64716a",green:"#315f4b",orange:"#e66e3f",yellow:"#edb949",blue:"#4c83a8",red:"#c85148",grid:"#e6e8e1",paper:"#fffefa"};
+    const SERIES=[
+      ["actual","Aktual",PALETTE.ink,2.8],
+      ["chronos2","Chronos-2",PALETTE.orange,2.4],
+      ["patchtst","PatchTST",PALETTE.green,2.0],
+      ["timesfm3","TimesFM 3.0",PALETTE.blue,2.0],
+      ["lightgbm","LightGBM rekursif",PALETTE.red,1.9],
+      ["weekly_naive","Weekly seasonal-naive","#8e9690",1.6],
+    ];
+    const fmt=(x,d=1)=>new Intl.NumberFormat("id-ID",{maximumFractionDigits:d,minimumFractionDigits:d}).format(x);
+    const compact=x=>new Intl.NumberFormat("id-ID",{notation:"compact",maximumFractionDigits:1}).format(x);
+    const layoutBase={paper_bgcolor:PALETTE.paper,plot_bgcolor:PALETTE.paper,font:{family:"Arial, sans-serif",color:PALETTE.muted,size:12},margin:{l:52,r:20,t:24,b:48},hoverlabel:{bgcolor:"#fffefa",font:{color:PALETTE.ink}},legend:{orientation:"h",y:1.12,x:0,font:{size:11}},xaxis:{showgrid:false,showline:true,linecolor:"#c7cec5",tickfont:{color:PALETTE.muted}},yaxis:{showgrid:true,gridcolor:PALETTE.grid,zeroline:false,tickformat:",.0f",tickfont:{color:PALETTE.muted}},autosize:true};
+    const config={responsive:true,displayModeBar:false};
+    const byId=id=>document.getElementById(id);
+    const setOptions=(select,items,firstLabel)=>{select.replaceChildren();if(firstLabel){const o=document.createElement("option");o.value="";o.textContent=firstLabel;select.append(o)}for(const item of items){const o=document.createElement("option");o.value=String(item.value);o.textContent=item.label;select.append(o)}};
+
+    async function start(){
+      try{
+        const response=await fetch("./data/results.json",{cache:"no-cache"});
+        if(!response.ok)throw new Error(`Data hasil tidak ditemukan (${response.status})`);
+        const D=await response.json();
+        if(!window.Plotly)throw new Error("Plotly gagal dimuat dari aset lokal.");
+        render(D);byId("load-state").hidden=true;byId("content").hidden=false;
+      }catch(error){byId("load-state").className="error";byId("load-state").textContent=error.message}
+    }
+    function render(D){
+      const e=D.evaluation, ranked=[...D.benchmark_metrics].sort((a,b)=>a.mae-b.mae), best=ranked[0], runner=ranked[1];
+      byId("hero-model").textContent=best.model;byId("hero-score").textContent=`MAE ${fmt(best.mae,2)} · RMSE ${fmt(best.rmse,2)} entries/stasiun-jam`;
+      byId("period-label").textContent=`${e.stations} stasiun · ${e.horizon_hours} jam horizon`;
+      byId("summary-stats").innerHTML=[
+        ["STASIUN",fmt(e.stations,0),"seluruh station set hasil profiling"],
+        ["OBSERVASI",compact(e.scored_rows),"baris stasiun-jam dinilai"],
+        ["ORIGIN TEST",fmt(e.origins,0),"blok harian non-overlap"],
+        ["HORIZON",`${e.horizon_hours} jam`,"prediksi per origin"],
+      ].map(([label,value,note])=>`<div class="stat"><div class="stat-label">${label}</div><div class="stat-value">${value}</div><div class="stat-note">${note}</div></div>`).join("");
+      byId("score-count").textContent=`${e.origins} ORIGIN · ${e.stations} STASIUN`;
+      byId("model-list").innerHTML=ranked.map((m,i)=>`<li class="${i===0?"winner":""}"><span class="rank">0${i+1}</span><span class="model-name">${m.model}</span><span class="bar-track"><span class="bar-fill" style="display:block;width:${Math.max(4,m.mae/ranked.at(-1).mae*100)}%"></span></span><span class="mae">${fmt(m.mae,2)}</span></li>`).join("");
+      Plotly.newPlot("model-chart",[{type:"bar",orientation:"h",x:[...ranked].reverse().map(x=>x.mae),y:[...ranked].reverse().map(x=>x.model),marker:{color:[...ranked].reverse().map(x=>x.model===best.model?PALETTE.orange:"#aab7ad"),cornerradius:4},text:[...ranked].reverse().map(x=>fmt(x.mae,2)),textposition:"outside",cliponaxis:false,hovertemplate:"%{y}<br>MAE %{x:.2f}<extra></extra>"}],{...layoutBase,height:300,margin:{l:155,r:55,t:16,b:38},showlegend:false,xaxis:{...layoutBase.xaxis,title:"MAE · entries/stasiun-jam"},yaxis:{...layoutBase.yaxis,showgrid:false,showline:false}},config);
+
+      const stationSelect=byId("station-select"), boroughSelect=byId("borough-select");
+      setOptions(stationSelect,D.station_forecasts.map(s=>({value:s.id,label:`${s.name} · ${s.borough}`})));
+      const busiest=D.stations[0];stationSelect.value=busiest.id;
+      const boroughs=[...new Set(D.stations.map(s=>s.borough))].sort();setOptions(boroughSelect,boroughs.map(x=>({value:x,label:x})),"Semua borough");
+      const globalLines=SERIES.map(([key,name,color,width])=>({x:D.example_forecast.map(d=>d.transit_timestamp),y:D.example_forecast.map(d=>d[key]),mode:"lines",name,line:{color,width},hovertemplate:"%{y:,.0f}<extra>"+name+"</extra>"}));
+      const aggregateChartReady=Plotly.newPlot("forecast-chart",globalLines,{...layoutBase,height:350,hovermode:"x unified",xaxis:{...layoutBase.xaxis,tickformat:"%d %b",title:"Tanggal dan jam"},yaxis:{...layoutBase.yaxis,title:"Entries agregat/jam"}},config);
+      const locById=new Map(D.stations.map(s=>[s.id,s]));
+      function updateStation(){
+        const s=D.station_forecasts.find(x=>x.id===stationSelect.value)||D.station_forecasts[0];
+        byId("forecast-title").textContent=`Forecast per jam · ${s.name}`;
+        const traces=SERIES.map(([key,name,color,width])=>({x:D.forecast_times,y:s[key],mode:"lines+markers",name,line:{color,width},marker:{size:4},hovertemplate:"%{y:,.0f}<extra>"+name+"</extra>"}));
+        Plotly.react("forecast-chart",traces,{...layoutBase,height:350,hovermode:"x unified",xaxis:{...layoutBase.xaxis,tickformat:"%H:%M",title:"Jam pada origin terakhir"},yaxis:{...layoutBase.yaxis,title:"Entries tercatat/jam"}},config);
+      }
+      function updateMap(){
+        const selectedBorough=boroughSelect.value;
+        const places=D.stations.filter(s=>!selectedBorough||s.borough===selectedBorough);
+        byId("map-count").textContent=`${places.length} STASIUN · WARNA = TOTAL ENTRIES`;
+        const chosen=locById.get(stationSelect.value);
+        const values=places.map(s=>s.total_entries);
+        const traces=[{type:"scattermapbox",lat:places.map(s=>s.latitude),lon:places.map(s=>s.longitude),mode:"markers",customdata:places.map(s=>[s.name,s.borough,s.total_entries]),marker:{size:places.map(s=>7+Math.sqrt(s.total_entries/Math.max(...values))*12),color:values,colorscale:[[0,"#a9cbb5"],[.5,"#4d8d68"],[1,"#e66e3f"]],cmin:Math.min(...values),cmax:Math.max(...values),opacity:.82,colorbar:{title:"Total entries",thickness:10,len:.65,tickfont:{size:10}}},hovertemplate:"<b>%{customdata[0]}</b><br>%{customdata[1]}<br>%{customdata[2]:,.0f} entries<extra></extra>"}];
+        if(chosen&&(!selectedBorough||chosen.borough===selectedBorough))traces.push({type:"scattermapbox",lat:[chosen.latitude],lon:[chosen.longitude],mode:"markers",marker:{size:19,color:PALETTE.ink,symbol:"circle"},hoverinfo:"skip",showlegend:false});
+        Plotly.react("station-map",traces,{...layoutBase,height:470,margin:{l:0,r:0,t:0,b:0},showlegend:false,mapbox:{style:"open-street-map",center:{lat:40.72,lon:-73.94},zoom:9.25}},config);
+      }
+      stationSelect.addEventListener("change",()=>{updateStation();updateMap()});boroughSelect.addEventListener("change",updateMap);aggregateChartReady.then(updateStation);updateMap();
+
+      const prof=D.hourly_profile,peak=prof.reduce((a,b)=>b.mean_entries>a.mean_entries?b:a,prof[0]);
+      Plotly.newPlot("hour-chart",[{type:"bar",x:prof.map(x=>String(x.hour).padStart(2,"0")+":00"),y:prof.map(x=>x.mean_entries),marker:{color:prof.map(x=>x.hour===peak.hour?PALETTE.orange:"#9aa99e"),cornerradius:4},hovertemplate:"%{x}<br>%{y:,.0f} entries/stasiun-jam<extra></extra>"}],{...layoutBase,height:300,showlegend:false,xaxis:{...layoutBase.xaxis,dtick:3,title:"Jam"},yaxis:{...layoutBase.yaxis,title:"Rata-rata entries/stasiun-jam"}},config);
+      const horizonWinners=new Map();
+      for(const step of [...new Set(D.horizon_metrics.map(x=>x.horizon_step))]){
+        const rows=D.horizon_metrics.filter(x=>x.horizon_step===step).sort((a,b)=>a.mae-b.mae);
+        const name=rows[0].model;horizonWinners.set(name,(horizonWinners.get(name)||0)+1);
+      }
+      const horizonLeader=[...horizonWinners.entries()].sort((a,b)=>b[1]-a[1])[0];
+      byId("insights").innerHTML=[
+        {n:"01",h:`Jam ${String(peak.hour).padStart(2,"0")}:00 paling ramai`,p:`Rata-rata ${fmt(peak.mean_entries,0)} entries per stasiun-jam pada profil test one-step.`},
+        {n:"02",h:`${best.model} memimpin MAE`,p:`MAE ${fmt(best.mae,2)}; selisih ${fmt((runner.mae-best.mae)/runner.mae*100,1)}% dari runner-up ${runner.model}.`},
+        {n:"03",h:`Pemenang berubah menurut horizon`,p:`${horizonLeader[0]} memiliki MAE terendah pada ${horizonLeader[1]} dari ${e.horizon_hours} langkah forecast.`},
+      ].map(i=>`<article><div class="insight-num">${i.n}</div><h3>${i.h}</h3><p>${i.p}</p></article>`).join("");
+      byId("method-data").textContent=`${D.dataset}; ${e.stations} stasiun; periode score ${new Date(e.period_start).toLocaleDateString("id-ID")}–${new Date(e.period_end).toLocaleDateString("id-ID")}; ${e.scored_rows.toLocaleString("id-ID")} observasi stasiun-jam.`;
+    }
+    window.addEventListener("DOMContentLoaded",start,{once:true});
+  </script>
+</body>
+</html>

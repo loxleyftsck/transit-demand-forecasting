@@ -1,0 +1,25 @@
+{
+  "chronos_model": "amazon/chronos-2",
+  "chronos_revision": "29ec3766d36d6f73f0696f85560a422f50e8498c",
+  "chronos_package_version": "2.3.2",
+  "neuralforecast_version": "3.2.2",
+  "patchtst_training": {
+    "input_size_hours": 512,
+    "horizon_hours": 24,
+    "max_steps": 500,
+    "validation_hours": 168,
+    "training_cutoff_exclusive": "2024-03-15 00:00:00",
+    "note": "PatchTST trained only on pre-test data; last 168 pre-test hours held out for early stopping."
+  },
+  "torch_version": "2.9.1+cu128",
+  "torch_cuda": "12.8",
+  "device": "cuda",
+  "context_length": 512,
+  "forecast_horizon_hours": 24,
+  "test_start": "2024-03-15 00:00:00",
+  "test_end_evaluated": "2024-05-19 23:00:00",
+  "origins": 66,
+  "stations": 428,
+  "scored_rows": 677952,
+  "notes": "Same non-overlapping 24-hour origins, station set, context length, target timestamps, and weekly-naive/recursive-LightGBM/TimesFM predictions as the prior benchmark. Chronos-2 predicts all station variates jointly; PatchTST is a globally trained channel-independent model. Existing test period was already examined in prior project iterations; this is exploratory, not a new untouched holdout."
+}
