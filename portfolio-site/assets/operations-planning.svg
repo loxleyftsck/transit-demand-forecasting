@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 324" role="img" aria-labelledby="title desc">
+  <title id="title">Perencanaan operasi transit</title>
+  <desc id="desc">Siluet kota, jam sibuk, dan kapasitas petugas disusun dalam satu ilustrasi.</desc>
+  <rect width="720" height="324" rx="14" fill="#18251f"/>
+  <circle cx="560" cy="91" r="67" fill="#315f4b" opacity=".55"/>
+  <g fill="#29483b">
+    <path d="M0 250h50v-63h37v63h25v-91h52v91h30v-52h36v52h28v-119h55v119h29v-77h50v77h24v-104h57v104h36v-59h42v59h27v-91h54v91h45v74H0z"/>
+  </g>
+  <path d="M0 251c110-8 182 7 272-1s165-6 238 0 138 6 210-2" fill="none" stroke="#f2f0e8" stroke-width="2" opacity=".45"/>
+  <path d="M55 216h610" stroke="#688675" stroke-width="3" stroke-linecap="round"/>
+  <path d="M96 216h194c55 0 55-80 111-80h191" fill="none" stroke="#e66e3f" stroke-width="6" stroke-linecap="round"/>
+  <path class="route-flow" d="M96 216h194c55 0 55-80 111-80h191" fill="none" stroke="#fffefa" stroke-width="2" stroke-linecap="round"/>
+  <g fill="#fffefa" stroke="#e66e3f" stroke-width="4">
+    <circle cx="96" cy="216" r="9"/><circle cx="290" cy="216" r="9"/><circle cx="401" cy="136" r="9"/><circle cx="592" cy="136" r="9"/>
+  </g>
+  <g transform="translate(505 32)">
+    <circle cx="78" cy="58" r="46" fill="#fffefa"/>
+    <circle cx="78" cy="58" r="38" fill="none" stroke="#d9ddd5" stroke-width="2"/>
+    <path d="M78 58V32M78 58l19 12" stroke="#315f4b" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="78" cy="58" r="4" fill="#e66e3f"/>
+  </g>
+  <g transform="translate(72 42)">
+    <rect width="116" height="52" rx="8" fill="#fffefa"/>
+    <text x="14" y="21" fill="#64716a" font-family="Arial,sans-serif" font-size="10" font-weight="700" letter-spacing="1">JAM PUNCAK</text>
+    <text x="14" y="41" fill="#18251f" font-family="Georgia,serif" font-size="19">17:00</text>
+  </g>
+  <g fill="#cbd6ce" font-family="Arial,sans-serif" font-size="10" font-weight="700" letter-spacing="1">
+    <text x="66" y="286">PANTAU</text><text x="265" y="286">PREDIKSI</text><text x="382" y="286">ATUR KAPASITAS</text><text x="570" y="286">RESPON</text>
+  </g>
+</svg>

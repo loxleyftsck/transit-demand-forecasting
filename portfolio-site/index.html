@@ -31,6 +31,18 @@
     .film-frame{border-radius:7px;overflow:hidden;background:#0c1713;aspect-ratio:16/9}.film-frame video{width:100%;height:100%;object-fit:cover;display:block}.film-caption{font:11px var(--mono);color:#c8d2ca;margin:10px 0 0}
     @media(max-width:760px){.nav-actions{gap:14px}.navlink{font-size:10px}.hero{padding-bottom:28px}.hero-visual{height:270px;margin-bottom:28px}.visual-stamp{right:14px;top:14px}.film-section{grid-template-columns:1fr;padding:17px;gap:17px;margin-bottom:64px}}
     @media(max-width:420px){.navlink{letter-spacing:.04em}.nav-actions{gap:10px}.nav-actions .navlink:first-child{display:none}.hero-visual{height:240px}.visual-copy{left:20px;bottom:20px}.visual-copy h2{font-size:29px}.panel-title small{font-size:9px}.control-row select{width:100%;min-width:0}.borough-label{margin:8px 0 0}}
+    .chart{transition:opacity .22s ease,transform .22s ease,filter .22s ease;will-change:opacity,transform}
+    .chart.is-switching{opacity:.34;transform:translateY(5px) scale(.997);filter:blur(1px)}
+    .control-row select:focus-visible{outline:3px solid #e66e3f66;outline-offset:2px}
+    .method article{display:flex;flex-direction:column;min-width:0}
+    .method-artframe{overflow:hidden;border-radius:7px;background:#f1efe7;margin:0 0 15px}
+    .method-artframe img{display:block;width:100%;height:auto;aspect-ratio:2.2;object-fit:cover;transition:transform .35s ease}
+    .method article:hover .method-artframe img{transform:scale(1.025)}
+    .route-flow{stroke-dasharray:5 10;stroke-dashoffset:0}
+    .method article:hover .route-flow{animation:route-drift 1.4s linear infinite}
+    @keyframes route-drift{to{stroke-dashoffset:-30}}
+    @media(prefers-reduced-motion:reduce){.chart{transition:none!important;will-change:auto}.chart.is-switching{opacity:1;transform:none;filter:none}}
+    @media(prefers-reduced-motion:reduce){.method-artframe img{transition:none!important}.route-flow{animation:none!important}}
   </style>
 </head>
 <body>
@@ -94,8 +106,9 @@
           <p>Jumlah entries seluruh stasiun dijumlahkan per jam untuk origin terakhir yang tersedia. Gunakan pilihan stasiun untuk melihat prediksi per lokasi.</p>
         </div>
         <article class="panel">
-          <div class="panel-title"><h3 id="forecast-title">Aktual vs prediksi</h3><small>HORIZON · 24 JAM</small></div>
+          <div class="panel-title"><h3 id="forecast-title">Aktual vs prediksi</h3><small id="forecast-model-label">SEMUA MODEL · 24 JAM</small></div>
           <div class="control-row">
+            <label for="model-select">Model</label><select id="model-select" aria-label="Pilih model forecast"></select>
             <label for="station-select">Stasiun</label><select id="station-select" aria-label="Pilih stasiun"></select>
             <label class="borough-label" for="borough-select">Borough peta</label><select id="borough-select" aria-label="Filter borough peta"></select>
           </div>
@@ -106,7 +119,7 @@
       <section>
         <div class="section-head">
           <div><div class="section-kicker">03 / STATION NETWORK</div><h2>Permintaan tersebar di seluruh jaringan.</h2></div>
-          <p>Peta merangkum total entries pada periode benchmark. Titik dan warna membantu membandingkan stasiun; arahkan kursor untuk nama dan volumenya.</p>
+          <p>Peta merangkum total entries pada periode benchmark. Arahkan kursor untuk melihat volume, atau klik titik untuk memilih stasiun dan menggeser peta ke lokasinya.</p>
         </div>
         <article class="panel">
           <div class="panel-title"><h3>Volume tercatat per stasiun</h3><small id="map-count"></small></div>
@@ -139,9 +152,9 @@
           <p>Output ini adalah ringkasan statis hasil eksperimen. Tidak ada model yang dijalankan di halaman publik.</p>
         </div>
         <div class="method">
-          <article><h3>Dataset</h3><p id="method-data"></p></article>
-          <article><h3>Perbandingan adil</h3><p>Semua model memakai station set, target waktu, konteks, dan 24 jam horizon yang sama. Baseline weekly-naive memakai nilai pada jam yang sama minggu sebelumnya.</p></article>
-          <article><h3>Model deployment</h3><p>Halaman menyajikan hasil yang telah dihitung sebelumnya: metrik, profil jam, peta agregat, dan contoh forecast terakhir. Tidak ada klaim forecast real-time.</p></article>
+          <article><div class="method-artframe"><img src="./assets/network-coverage.svg" alt="Ilustrasi jaringan 428 stasiun yang terhubung oleh beberapa jalur transit" loading="lazy"></div><h3>Dataset</h3><p id="method-data"></p></article>
+          <article><div class="method-artframe"><img src="./assets/forecast-comparison.svg" alt="Ilustrasi aktual dan beberapa forecast dalam horizon 24 jam" loading="lazy"></div><h3>Perbandingan adil</h3><p>Semua model memakai station set, target waktu, konteks, dan 24 jam horizon yang sama. Baseline weekly-naive memakai nilai pada jam yang sama minggu sebelumnya.</p></article>
+          <article><div class="method-artframe"><img src="./assets/operations-planning.svg" alt="Ilustrasi penggunaan forecast untuk merencanakan kapasitas dan petugas" loading="lazy"></div><h3>Model deployment</h3><p>Halaman menyajikan hasil yang telah dihitung sebelumnya: metrik, profil jam, peta agregat, dan contoh forecast terakhir. Tidak ada klaim forecast real-time.</p></article>
         </div>
       </section>
     </div>
@@ -192,30 +205,81 @@
       byId("model-list").innerHTML=ranked.map((m,i)=>`<li class="${i===0?"winner":""}"><span class="rank">0${i+1}</span><span class="model-name">${m.model}</span><span class="bar-track"><span class="bar-fill" style="display:block;width:${Math.max(4,m.mae/ranked.at(-1).mae*100)}%"></span></span><span class="mae">${fmt(m.mae,2)}</span></li>`).join("");
       Plotly.newPlot("model-chart",[{type:"bar",orientation:"h",x:[...ranked].reverse().map(x=>x.mae),y:[...ranked].reverse().map(x=>x.model),marker:{color:[...ranked].reverse().map(x=>x.model===best.model?PALETTE.orange:"#aab7ad"),cornerradius:4},text:[...ranked].reverse().map(x=>fmt(x.mae,2)),textposition:"outside",cliponaxis:false,hovertemplate:"%{y}<br>MAE %{x:.2f}<extra></extra>"}],{...layoutBase,height:300,margin:{l:155,r:55,t:16,b:38},showlegend:false,xaxis:{...layoutBase.xaxis,title:"MAE · entries/stasiun-jam"},yaxis:{...layoutBase.yaxis,showgrid:false,showline:false}},config);
 
-      const stationSelect=byId("station-select"), boroughSelect=byId("borough-select");
-      setOptions(stationSelect,D.station_forecasts.map(s=>({value:s.id,label:`${s.name} · ${s.borough}`})));
-      const busiest=D.stations[0];stationSelect.value=busiest.id;
-      const boroughs=[...new Set(D.stations.map(s=>s.borough))].sort();setOptions(boroughSelect,boroughs.map(x=>({value:x,label:x})),"Semua borough");
-      const globalLines=SERIES.map(([key,name,color,width])=>({x:D.example_forecast.map(d=>d.transit_timestamp),y:D.example_forecast.map(d=>d[key]),mode:"lines",name,line:{color,width},hovertemplate:"%{y:,.0f}<extra>"+name+"</extra>"}));
-      const aggregateChartReady=Plotly.newPlot("forecast-chart",globalLines,{...layoutBase,height:350,hovermode:"x unified",xaxis:{...layoutBase.xaxis,tickformat:"%d %b",title:"Tanggal dan jam"},yaxis:{...layoutBase.yaxis,title:"Entries agregat/jam"}},config);
-      const locById=new Map(D.stations.map(s=>[s.id,s]));
-      function updateStation(){
-        const s=D.station_forecasts.find(x=>x.id===stationSelect.value)||D.station_forecasts[0];
-        byId("forecast-title").textContent=`Forecast per jam · ${s.name}`;
-        const traces=SERIES.map(([key,name,color,width])=>({x:D.forecast_times,y:s[key],mode:"lines+markers",name,line:{color,width},marker:{size:4},hovertemplate:"%{y:,.0f}<extra>"+name+"</extra>"}));
-        Plotly.react("forecast-chart",traces,{...layoutBase,height:350,hovermode:"x unified",xaxis:{...layoutBase.xaxis,tickformat:"%H:%M",title:"Jam pada origin terakhir"},yaxis:{...layoutBase.yaxis,title:"Entries tercatat/jam"}},config);
+      const modelSelect=byId("model-select"),stationSelect=byId("station-select"),boroughSelect=byId("borough-select");
+      setOptions(modelSelect,SERIES.filter(([key])=>key!=="actual").map(([key,name])=>({value:key,label:name})),"Semua model");
+      const forecastById=new Map(D.station_forecasts.map(s=>[String(s.id),s]));
+      const forecastIdByName=new Map(D.station_forecasts.map(s=>[s.name,String(s.id)]));
+      const stationMetaById=new Map(D.stations.map(s=>[forecastIdByName.get(s.station_complex),s]).filter(([id])=>id));
+      const boroughs=[...new Set(D.stations.map(s=>s.borough))].sort();
+      setOptions(boroughSelect,boroughs.map(x=>({value:x,label:x})),"Semua borough");
+      let viewTransitionTimer;
+      function transitionViews(ids,update){
+        const nodes=ids.map(byId);
+        if(window.matchMedia("(prefers-reduced-motion: reduce)").matches){update();return}
+        window.clearTimeout(viewTransitionTimer);
+        nodes.forEach(node=>node.classList.add("is-switching"));
+        viewTransitionTimer=window.setTimeout(()=>{
+          update();
+          requestAnimationFrame(()=>nodes.forEach(node=>node.classList.remove("is-switching")));
+        },90);
       }
-      function updateMap(){
+      function stationOptions(){
+        const current=stationSelect.value,selectedBorough=boroughSelect.value;
+        const available=D.station_forecasts.filter(s=>{
+          const meta=stationMetaById.get(String(s.id));
+          return meta&&(!selectedBorough||meta.borough===selectedBorough);
+        }).sort((a,b)=>(stationMetaById.get(String(b.id))?.total_entries||0)-(stationMetaById.get(String(a.id))?.total_entries||0));
+        setOptions(stationSelect,available.map(s=>({value:s.id,label:`${s.name} · ${s.borough}`})));
+        stationSelect.value=available.some(s=>String(s.id)===current)?current:String(available[0]?.id||"");
+      }
+      const busiest=D.stations[0];
+      stationSelect.value=forecastIdByName.get(busiest.station_complex)||"";
+      stationOptions();
+      const aggregateChartReady=Plotly.newPlot("forecast-chart",[],{...layoutBase,height:350,hovermode:"x unified",xaxis:{...layoutBase.xaxis,tickformat:"%H:%M",title:"Jam pada origin terakhir"},yaxis:{...layoutBase.yaxis,title:"Entries tercatat/jam"}},config);
+      function selectedSeries(){
+        return SERIES.filter(([key])=>key==="actual"||!modelSelect.value||key===modelSelect.value);
+      }
+      function updateStation(){
+        const s=forecastById.get(String(stationSelect.value))||D.station_forecasts[0];
+        const chosenModel=SERIES.find(([key])=>key===modelSelect.value);
+        byId("forecast-title").textContent=`Forecast per jam · ${s.name}`;
+        byId("forecast-model-label").textContent=`${chosenModel?chosenModel[1].toUpperCase():"SEMUA MODEL"} · 24 JAM`;
+        const traces=selectedSeries().map(([key,name,color,width])=>({uid:key,x:D.forecast_times,y:s[key],mode:"lines+markers",name,line:{color,width},marker:{size:4},hovertemplate:"%{y:,.0f}<extra>"+name+"</extra>"}));
+        Plotly.react("forecast-chart",traces,{...layoutBase,height:350,hovermode:"x unified",transition:{duration:440,easing:"cubic-in-out"},xaxis:{...layoutBase.xaxis,tickformat:"%H:%M",title:"Jam pada origin terakhir"},yaxis:{...layoutBase.yaxis,title:"Entries tercatat/jam"}},config);
+      }
+      function updateMap(focusStation=false){
         const selectedBorough=boroughSelect.value;
         const places=D.stations.filter(s=>!selectedBorough||s.borough===selectedBorough);
-        byId("map-count").textContent=`${places.length} STASIUN · WARNA = TOTAL ENTRIES`;
-        const chosen=locById.get(stationSelect.value);
-        const values=places.map(s=>s.total_entries);
-        const traces=[{type:"scattermapbox",lat:places.map(s=>s.latitude),lon:places.map(s=>s.longitude),mode:"markers",customdata:places.map(s=>[s.name,s.borough,s.total_entries]),marker:{size:places.map(s=>7+Math.sqrt(s.total_entries/Math.max(...values))*12),color:values,colorscale:[[0,"#a9cbb5"],[.5,"#4d8d68"],[1,"#e66e3f"]],cmin:Math.min(...values),cmax:Math.max(...values),opacity:.82,colorbar:{title:"Total entries",thickness:10,len:.65,tickfont:{size:10}}},hovertemplate:"<b>%{customdata[0]}</b><br>%{customdata[1]}<br>%{customdata[2]:,.0f} entries<extra></extra>"}];
-        if(chosen&&(!selectedBorough||chosen.borough===selectedBorough))traces.push({type:"scattermapbox",lat:[chosen.latitude],lon:[chosen.longitude],mode:"markers",marker:{size:19,color:PALETTE.ink,symbol:"circle"},hoverinfo:"skip",showlegend:false});
-        Plotly.react("station-map",traces,{...layoutBase,height:470,margin:{l:0,r:0,t:0,b:0},showlegend:false,mapbox:{style:"open-street-map",center:{lat:40.72,lon:-73.94},zoom:9.25}},config);
+        byId("map-count").textContent=`${places.length} STASIUN · TITIK PILIHAN DISOROT`;
+        const chosen=stationMetaById.get(String(stationSelect.value));
+        const visibleChosen=chosen&&places.some(s=>s.station_complex_id===chosen.station_complex_id);
+        const values=places.map(s=>s.total_entries),maxValue=Math.max(1,...values);
+        const traces=[{type:"scattermapbox",lat:places.map(s=>s.latitude),lon:places.map(s=>s.longitude),mode:"markers",customdata:places.map(s=>[forecastIdByName.get(s.station_complex),s.station_complex,s.borough,s.total_entries]),marker:{size:places.map(s=>7+Math.sqrt(s.total_entries/maxValue)*12),color:values,colorscale:[[0,"#a9cbb5"],[.5,"#4d8d68"],[1,"#e66e3f"]],cmin:Math.min(...values),cmax:maxValue,opacity:.82,colorbar:{title:"Total entries",thickness:10,len:.65,tickfont:{size:10}}},hovertemplate:"<b>%{customdata[1]}</b><br>%{customdata[2]}<br>%{customdata[3]:,.0f} entries<extra>Klik untuk memilih</extra>"}];
+        if(visibleChosen){
+          traces.push({type:"scattermapbox",lat:[chosen.latitude],lon:[chosen.longitude],mode:"markers",marker:{size:31,color:PALETTE.orange,opacity:.22,line:{color:PALETTE.orange,width:2}},hoverinfo:"skip",showlegend:false});
+          traces.push({type:"scattermapbox",lat:[chosen.latitude],lon:[chosen.longitude],mode:"markers",marker:{size:13,color:PALETTE.ink,line:{color:PALETTE.paper,width:2}},hoverinfo:"skip",showlegend:false});
+        }
+        const focus=focusStation&&visibleChosen?chosen:null;
+        const center=focus?{lat:focus.latitude,lon:focus.longitude}:places.length?{lat:places.reduce((sum,s)=>sum+s.latitude,0)/places.length,lon:places.reduce((sum,s)=>sum+s.longitude,0)/places.length}:{lat:40.72,lon:-73.94};
+        const zoom=focus?12.25:selectedBorough?10.35:9.15;
+        return Plotly.react("station-map",traces,{...layoutBase,height:470,margin:{l:0,r:0,t:0,b:0},showlegend:false,transition:{duration:560,easing:"cubic-in-out"},uirevision:`network-${selectedBorough||"all"}-${stationSelect.value||"none"}`,mapbox:{style:"open-street-map",center,zoom}},config);
       }
-      stationSelect.addEventListener("change",()=>{updateStation();updateMap()});boroughSelect.addEventListener("change",updateMap);aggregateChartReady.then(updateStation);updateMap();
+      const stationMap=byId("station-map");
+      function bindMapSelection(){
+        if(stationMap.dataset.stationClickBound)return;
+        stationMap.dataset.stationClickBound="true";
+        stationMap.on("plotly_click",event=>{
+          const id=String(event.points?.[0]?.customdata?.[0]||"");
+          if(!forecastById.has(id))return;
+          stationSelect.value=id;
+          transitionViews(["forecast-chart","station-map"],()=>{updateStation();updateMap(true)});
+        });
+      }
+      stationSelect.addEventListener("change",()=>transitionViews(["forecast-chart","station-map"],()=>{updateStation();updateMap(true)}));
+      modelSelect.addEventListener("change",()=>transitionViews(["forecast-chart"],updateStation));
+      boroughSelect.addEventListener("change",()=>transitionViews(["forecast-chart","station-map"],()=>{stationOptions();updateStation();updateMap(false)}));
+      aggregateChartReady.then(updateStation);
+      updateMap(false).then(bindMapSelection);
 
       const prof=D.hourly_profile,peak=prof.reduce((a,b)=>b.mean_entries>a.mean_entries?b:a,prof[0]);
       Plotly.newPlot("hour-chart",[{type:"bar",x:prof.map(x=>String(x.hour).padStart(2,"0")+":00"),y:prof.map(x=>x.mean_entries),marker:{color:prof.map(x=>x.hour===peak.hour?PALETTE.orange:"#9aa99e"),cornerradius:4},hovertemplate:"%{x}<br>%{y:,.0f} entries/stasiun-jam<extra></extra>"}],{...layoutBase,height:300,showlegend:false,xaxis:{...layoutBase.xaxis,dtick:3,title:"Jam"},yaxis:{...layoutBase.yaxis,title:"Rata-rata entries/stasiun-jam"}},config);
