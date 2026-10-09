@@ -34,6 +34,7 @@
     .chart{transition:opacity .22s ease,transform .22s ease,filter .22s ease;will-change:opacity,transform}
     .chart.is-switching{opacity:.34;transform:translateY(5px) scale(.997);filter:blur(1px)}
     .control-row select:focus-visible{outline:3px solid #e66e3f66;outline-offset:2px}
+    .station-story{margin:0 0 28px}.station-story img{display:block;width:100%;height:auto;border-radius:10px;aspect-ratio:1672/941}.station-story figcaption{font-size:12px;color:var(--muted);margin-top:10px;max-width:760px}
     .method article{display:flex;flex-direction:column;min-width:0}
     .method-artframe{overflow:hidden;border-radius:7px;background:#f1efe7;margin:0 0 15px}
     .method-artframe img{display:block;width:100%;height:auto;aspect-ratio:2.2;object-fit:cover;transition:transform .35s ease}
@@ -68,10 +69,10 @@
         </aside>
       </section>
 
-      <section class="hero-visual" aria-label="Visual stasiun subway New York">
-        <img src="./assets/subway-platform.jpg" alt="Kereta subway memasuki stasiun bawah tanah di New York" fetchpriority="high">
+      <section class="hero-visual" aria-label="Ilustrasi subway dan pola permintaan penumpang">
+        <img src="./assets/transit-demand-hero.webp" alt="Ilustrasi subway New York dengan kurva permintaan dan jaringan stasiun" width="1672" height="941" decoding="async" fetchpriority="high">
         <div class="visual-copy"><span>MTA NEW YORK · DATA STORY</span><h2>Satu jaringan.<br>Ritme yang berubah setiap jam.</h2></div>
-        <span class="visual-stamp">2022—2024 / HOURLY</span>
+        <span class="visual-stamp">ILUSTRASI / TRANSIT DATA</span>
       </section>
 
       <div class="summary" id="summary-stats"></div>
@@ -151,6 +152,10 @@
           <div><div class="section-kicker">06 / METHOD</div><h2>Ruang lingkup dan metodologi.</h2></div>
           <p>Output ini adalah ringkasan statis hasil eksperimen. Tidak ada model yang dijalankan di halaman publik.</p>
         </div>
+        <figure class="station-story">
+          <img src="./assets/station-passenger-flow.webp" alt="Ilustrasi isometrik alur penumpang dari pintu masuk dan fare gate menuju peron subway" width="1672" height="941" loading="lazy" decoding="async">
+          <figcaption>Ilustrasi konseptual alur penumpang di stasiun. Forecast per jam membantu membaca perubahan permintaan untuk perencanaan kapasitas dan petugas.</figcaption>
+        </figure>
         <div class="method">
           <article><div class="method-artframe"><img src="./assets/network-coverage.svg" alt="Ilustrasi jaringan 428 stasiun yang terhubung oleh beberapa jalur transit" loading="lazy"></div><h3>Dataset</h3><p id="method-data"></p></article>
           <article><div class="method-artframe"><img src="./assets/forecast-comparison.svg" alt="Ilustrasi aktual dan beberapa forecast dalam horizon 24 jam" loading="lazy"></div><h3>Perbandingan adil</h3><p>Semua model memakai station set, target waktu, konteks, dan 24 jam horizon yang sama. Baseline weekly-naive memakai nilai pada jam yang sama minggu sebelumnya.</p></article>
